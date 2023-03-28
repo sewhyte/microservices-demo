@@ -33,11 +33,13 @@ import (
 	money "github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	grpctrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/google.golang.org/grpc"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 const (
@@ -83,20 +85,19 @@ type checkoutService struct {
 
 func main() {
 	ctx := context.Background()
-	if os.Getenv("ENABLE_TRACING") == "1" {
-		log.Info("Tracing enabled.")
-		initTracing()
 
-	} else {
-		log.Info("Tracing disabled.")
-	}
+	tracer.Start()
+	defer tracer.Stop()
 
-	if os.Getenv("ENABLE_PROFILER") == "1" {
-		log.Info("Profiling enabled.")
-		go initProfiling("checkoutservice", "1.0.0")
-	} else {
-		log.Info("Profiling disabled.")
-	}
+	ui := grpctrace.UnaryServerInterceptor(
+		grpctrace.WithServiceName("checkoutservice"),
+		grpctrace.WithStreamMessages(false),
+	)
+
+	si := grpctrace.StreamServerInterceptor(
+		grpctrace.WithServiceName("checkoutservice"),
+		grpctrace.WithStreamMessages(true),
+	)
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -132,8 +133,8 @@ func main() {
 		propagation.NewCompositeTextMapPropagator(
 			propagation.TraceContext{}, propagation.Baggage{}))
 	srv = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		grpc.UnaryInterceptor(ui),
+		grpc.StreamInterceptor(si),
 	)
 
 	pb.RegisterCheckoutServiceServer(srv, svc)
@@ -209,8 +210,8 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	defer cancel()
 	*conn, err = grpc.DialContext(ctx, addr,
 		grpc.WithInsecure(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		grpc.WithUnaryInterceptor(grpctrace.UnaryClientInterceptor(grpctrace.WithServiceName("checkoutservice"))),
+		grpc.WithStreamInterceptor(grpctrace.StreamClientInterceptor(grpctrace.WithServiceName("checkoutservice"))))
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}

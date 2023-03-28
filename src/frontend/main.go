@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/profiler"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -32,6 +31,8 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
+
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 )
 
 const (
@@ -137,7 +138,9 @@ func main() {
 	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr)
 	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
 
-	r := mux.NewRouter()
+	r := muxtrace.NewRouter(
+		muxtrace.WithServiceName("frontend"),
+	)
 	r.HandleFunc("/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc("/product/{id}", svc.productHandler).Methods(http.MethodGet, http.MethodHead)
 	r.HandleFunc("/cart", svc.viewCartHandler).Methods(http.MethodGet, http.MethodHead)

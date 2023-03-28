@@ -44,6 +44,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	grpctrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/google.golang.org/grpc"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 var (
@@ -76,21 +79,9 @@ func init() {
 }
 
 func main() {
-	if os.Getenv("ENABLE_TRACING") == "1" {
-		err := initTracing()
-		if err != nil {
-			log.Warnf("warn: failed to start tracer: %+v", err)
-		}
-	} else {
-		log.Info("Tracing disabled.")
-	}
 
-	if os.Getenv("DISABLE_PROFILER") == "" {
-		log.Info("Profiling enabled.")
-		go initProfiling("productcatalogservice", "1.0.0")
-	} else {
-		log.Info("Profiling disabled.")
-	}
+	tracer.Start()
+	defer tracer.Stop()
 
 	flag.Parse()
 
@@ -135,14 +126,26 @@ func run(port string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	ui := grpctrace.UnaryServerInterceptor(
+		grpctrace.WithServiceName("productcatalogservice"),
+		grpctrace.WithStreamMessages(false),
+	)
+
+	si := grpctrace.StreamServerInterceptor(
+		grpctrace.WithServiceName("productcatalogservice"),
+		grpctrace.WithStreamMessages(true),
+	)
+
 	// Propagate trace context
 	otel.SetTextMapPropagator(
 		propagation.NewCompositeTextMapPropagator(
 			propagation.TraceContext{}, propagation.Baggage{}))
 	var srv *grpc.Server
 	srv = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
+		grpc.UnaryInterceptor(ui),
+		grpc.StreamInterceptor(si),
+	)
 
 	svc := &productCatalog{}
 

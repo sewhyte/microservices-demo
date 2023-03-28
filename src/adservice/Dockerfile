@@ -29,7 +29,6 @@ FROM eclipse-temurin:19.0.1_10-jre-alpine@sha256:a75ea64f676041562cd7d3a54a9764b
 
 RUN apk add --no-cache ca-certificates
 
-# Download Stackdriver Profiler Java agent
 RUN mkdir -p /opt/cprof && \
     wget -q -O- https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent_alpine.tar.gz \
     | tar xzv -C /opt/cprof && \
@@ -47,3 +46,7 @@ FROM without-grpc-health-probe-bin
 ENV GRPC_HEALTH_PROBE_VERSION=v0.4.17
 RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe
+
+ENV JAVA_OPTS " -javaagent:/dd-java-agent.jar"
+RUN wget -O /tmp/dd-java-agent.jar https://dtdg.co/latest-java-tracer
+RUN chmod 0777 /tmp/dd-java-agent.jar

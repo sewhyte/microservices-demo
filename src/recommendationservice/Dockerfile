@@ -52,3 +52,6 @@ ENTRYPOINT ["python", "recommendation_server.py"]
 
 FROM without-grpc-health-probe-bin
 COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
+
+COPY --from=builder /usr/local/bin/ddtrace-run /usr/local/bin/ddtrace-run
+ENTRYPOINT ["/usr/local/bin/ddtrace-run", "python", "/recommendationservice/recommendation_server.py"]

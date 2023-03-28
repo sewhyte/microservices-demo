@@ -20,6 +20,7 @@
     "@opentelemetry/sdk-node": "0.36.1",
     "pino": "8.11.0",
     "simple-card-validator": "^1.1.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "dd-trace": "3.15.0"
   }
 }

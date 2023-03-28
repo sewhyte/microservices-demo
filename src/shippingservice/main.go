@@ -30,6 +30,9 @@ import (
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/shippingservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
+	grpctrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/google.golang.org/grpc"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 const (
@@ -53,20 +56,19 @@ func init() {
 }
 
 func main() {
-	if os.Getenv("DISABLE_TRACING") == "" {
-		log.Info("Tracing enabled, but temporarily unavailable")
-		log.Info("See https://github.com/GoogleCloudPlatform/microservices-demo/issues/422 for more info.")
-		go initTracing()
-	} else {
-		log.Info("Tracing disabled.")
-	}
 
-	if os.Getenv("DISABLE_PROFILER") == "" {
-		log.Info("Profiling enabled.")
-		go initProfiling("shippingservice", "1.0.0")
-	} else {
-		log.Info("Profiling disabled.")
-	}
+	tracer.Start()
+	defer tracer.Stop()
+
+	ui := grpctrace.UnaryServerInterceptor(
+		grpctrace.WithServiceName("shippingservice"),
+		grpctrace.WithStreamMessages(false),
+	)
+
+	si := grpctrace.StreamServerInterceptor(
+		grpctrace.WithServiceName("shippingservice"),
+		grpctrace.WithStreamMessages(true),
+	)
 
 	port := defaultPort
 	if value, ok := os.LookupEnv("PORT"); ok {
@@ -82,10 +84,16 @@ func main() {
 	var srv *grpc.Server
 	if os.Getenv("DISABLE_STATS") == "" {
 		log.Info("Stats enabled, but temporarily unavailable")
-		srv = grpc.NewServer()
+		srv = grpc.NewServer(
+			grpc.UnaryInterceptor(ui),
+			grpc.StreamInterceptor(si),
+		)
 	} else {
 		log.Info("Stats disabled.")
-		srv = grpc.NewServer()
+		srv = grpc.NewServer(
+			grpc.UnaryInterceptor(ui),
+			grpc.StreamInterceptor(si),
+		)
 	}
 	svc := &server{}
 	pb.RegisterShippingServiceServer(srv, svc)
