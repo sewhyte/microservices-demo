@@ -47,6 +47,8 @@ COPY --from=builder /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb
 
 # Install the tracer
 ENV DD_APM_VERSION=1.9.0
+RUN apk --no-cache update
+RUN apk add curl
 RUN mkdir -p /opt/datadog
 RUN curl -L https://github.com/DataDog/dd-trace-dotnet/releases/download/v${DD_APM_VERSION}/datadog-dotnet-apm-${DD_APM_VERSION}.tar.gz |  tar xzf - -C /opt/datadog
 RUN mkdir -p /var/log/datadog
