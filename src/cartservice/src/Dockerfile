@@ -44,11 +44,12 @@ RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health
 
 # Copy the tracer from build target
 COPY --from=builder /tmp/datadog-dotnet-apm.deb /tmp/datadog-dotnet-apm.deb
+
 # Install the tracer
-RUN mkdir -p /opt/datadog \
-    && mkdir -p /var/log/datadog \
-    && dpkg -i /tmp/datadog-dotnet-apm.deb \
-    && rm /tmp/datadog-dotnet-apm.deb
+ENV DD_APM_VERSION=1.9.0
+RUN mkdir -p /opt/datadog
+RUN curl -L https://github.com/DataDog/dd-trace-dotnet/releases/download/v${DD_APM_VERSION}/datadog-dotnet-apm-${DD_APM_VERSION}.tar.gz |  tar xzf - -C /opt/datadog
+RUN mkdir -p /var/log/datadog
 
 # Enable the tracer
 ENV CORECLR_ENABLE_PROFILING=1
