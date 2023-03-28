@@ -23,11 +23,11 @@ namespace cartservice
 
         private static void ConfigureDatadogAPM()
         {
-            var settings = TracerSettings.FromDefaultSources();
-            settings.ServiceName = "cartservice";
-            settings.AgentUri = new Uri("http://localhost:8126/");
-            settings.Integrations["AdoNet"].Enabled = false;
-            settings.Environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
+            #var settings = TracerSettings.FromDefaultSources();
+            #settings.ServiceName = "cartservice";
+            #settings.AgentUri = new Uri("http://localhost:8126/");
+            #settings.Integrations["AdoNet"].Enabled = false;
+            #settings.Environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 
             var tracer = new Tracer(settings);
             Tracer.Instance = tracer;
