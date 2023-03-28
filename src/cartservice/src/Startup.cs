@@ -10,7 +10,6 @@ using Microsoft.Extensions.Hosting;
 using cartservice.cartstore;
 using cartservice.services;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
-using Datadog.Trace.ClrProfiler.Managed;
 
 namespace cartservice
 {
