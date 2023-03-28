@@ -13,6 +13,7 @@
     <PackageReference Include="Google.Cloud.Spanner.Data" Version="4.4.0" />
     <PackageReference Include="Npgsql" Version="7.0.2" />
     <PackageReference Include="Google.Cloud.SecretManager.V1" Version="2.1.0" />
+     <PackageReference Include="Datadog.Trace.ClrProfiler.Managed" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup>

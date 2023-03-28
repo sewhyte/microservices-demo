@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using cartservice.cartstore;
 using cartservice.services;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Datadog.Trace.ClrProfiler.Managed;
 
 namespace cartservice
 {
@@ -18,6 +19,19 @@ namespace cartservice
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+        }
+
+        private static void ConfigureDatadogAPM()
+        {
+            var settings = TracerSettings.FromDefaultSources();
+            settings.ServiceName = "cartservice";
+            settings.AgentUri = new Uri("http://localhost:8126/");
+            settings.Integrations["AdoNet"].Enabled = false;
+            settings.Environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
+
+            var tracer = new Tracer(settings);
+            Tracer.Instance = tracer;
+
         }
 
         public IConfiguration Configuration { get; }
